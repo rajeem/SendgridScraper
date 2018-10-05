@@ -17,21 +17,27 @@ namespace SendgridLogsScraper
     {
         static void Main(string[] args)
         {
-            using (IWebDriver driver = new FirefoxDriver())
+            var firefoxOptions = new FirefoxOptions();
+            firefoxOptions.AddArguments("--headless");
+
+            using (IWebDriver driver = new FirefoxDriver(firefoxOptions))
             {
                 var js = (IJavaScriptExecutor)driver;
                 var timeout = new TimeSpan(0, 1, 0);
 
+                Console.WriteLine("opening browser...");
                 driver.Navigate().GoToUrl("https://app.sendgrid.com/login?redirect_to=%2Femail_activity");
                 driver.FindElement(By.Id("usernameContainer-input-id")).SendKeys(ConfigurationManager.AppSettings["sendgridUsername"]);
                 driver.FindElement(By.Id("passwordContainer-input-id")).SendKeys(ConfigurationManager.AppSettings["sendgridPassword"]);
                 driver.FindElement(By.XPath("//button[@data-role='login-btn']")).Click();
 
+                Console.WriteLine("logging in...");
                 new WebDriverWait(driver, timeout).Until(ExpectedConditions.ElementExists(By.XPath("//div[contains(@class, 'filter-search-basic')]//button[@data-role='searchButton']")));
                 js.ExecuteScript(@"
                             document.querySelector('.filter-search-basic button[data-role=""searchButton""').click();
                         ");
 
+                Console.WriteLine("retrieving logs...");
                 new WebDriverWait(driver, timeout).Until(x => (bool)((IJavaScriptExecutor)x).ExecuteScript("return jQuery.active == 0"));
 
                 var htmlResult = driver.FindElement(By.Id("email_stats")).GetAttribute("outerHTML");
